@@ -1,73 +1,75 @@
-targetScope = 'subscription'
-
+targetScope = 'resourceGroup'
+ 
 @minLength(1)
 @maxLength(16)
 @description('Prefix for all resources, i.e. {name}storage')
 param name string
-
+ 
 @minLength(1)
 @description('Primary location for all resources')
-param location string = deployment().location
-
+param location string
+ 
 @description('The email address of the owner of the service')
 @minLength(1)
 param publisherEmail string
-
+ 
 @description('The name of the owner of the service')
 @minLength(1)
 param publisherName string
-
-resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'rg-${name}'
-  location: location
-  tags: {
-    apptemplate: 'IntegrationSample'
-  }
-}
-
-
+ 
+param rgname string
+ 
+// resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+//   name: 'rg-${name}'
+//   location: location
+//   tags: {
+//     apptemplate: 'IntegrationSample'
+//   }
+// }
+ 
+ 
 module apim './modules/apim.bicep' = {
-  name: '${rg.name}-apim'
-  scope: rg
+  name: '${name}-apim'
+  // scope: resourceGroup(rgname)
   params: {
     apimServiceName: 'apim-${toLower(name)}'
     publisherEmail: publisherEmail
     publisherName: publisherName
-    location: rg.location
+    location: location
   }
 }
-
+ 
 module servicebus './modules/service-bus.bicep' = {
-  name: '${rg.name}-servicebus'
-  scope: rg
+  name: '${name}-servicebus'
+  // scope: resourceGroup(rgname)
   params: {
     nameSpace: 'sb-${toLower(name)}'
-    location: rg.location
+    location: location
   }
 }
-
+ 
 module cosmosdb './modules/cosmosdb.bicep' = {
-  name: '${rg.name}-cosmosdb'
-  scope: rg
+  name: '${name}-cosmosdb'
+  // scope: resourceGroup(rgname)
   params: {
     accountName: 'cosmos-${toLower(name)}'
-    location: rg.location
+    location: location
   }
 }
-
+ 
 module function './modules/function.bicep' = {
-  name: '${rg.name}-function'
-  scope: rg
+  name: '${name}-function'
+  // scope: resourceGroup(rgname)
   params: {
     appName: 'func-${toLower(name)}'
-    location: rg.location
-    appInsightsLocation: rg.location
+    location: location
+    appInsightsLocation: location
   }
 }
-
+ 
 module roleAssignmentAPIMSenderSB './modules/configure/roleAssign-apim-service-bus.bicep' = {
-  name: '${rg.name}-roleAssignmentAPIMSB'
-  scope: rg
+  name: '${name}-roleAssignmentAPIMSB'
+  scope: resourceGroup(rgname)
   params: {
     apimServiceName: apim.outputs.apimServiceName
     sbNameSpace: servicebus.outputs.sbNameSpace
@@ -77,10 +79,10 @@ module roleAssignmentAPIMSenderSB './modules/configure/roleAssign-apim-service-b
     servicebus
   ]
 }
-
+ 
 module roleAssignmentFcuntionReceiverSB './modules/configure/roleAssign-function-service-bus.bicep' = {
-  name: '${rg.name}-roleAssignmentFunctionSB'
-  scope: rg
+  name: '${name}-roleAssignmentFunctionSB'
+  // scope: resourceGroup(rgname)
   params: {
     functionAppName: function.outputs.functionAppName
     sbNameSpace: servicebus.outputs.sbNameSpace
@@ -90,10 +92,10 @@ module roleAssignmentFcuntionReceiverSB './modules/configure/roleAssign-function
     servicebus
   ]
 }
-
+ 
 module configurFunctionAppSettings './modules/configure/configure-function.bicep' = {
-  name: '${rg.name}-configureFunction'
-  scope: rg
+  name: '${name}-configureFunction'
+  // scope: resourceGroup(rgname)
   params: {
     functionAppName: function.outputs.functionAppName
     cosmosAccountName: cosmosdb.outputs.cosmosDBAccountName
@@ -105,10 +107,10 @@ module configurFunctionAppSettings './modules/configure/configure-function.bicep
     cosmosdb
   ]
 }
-
+ 
 module configurAPIM './modules/configure/configure-apim.bicep' = {
-  name: '${rg.name}-configureAPIM'
-  scope: rg
+  name: '${name}-configureAPIM'
+  // scope: resourceGroup(rgname)
   params: {
     apimServiceName: apim.outputs.apimServiceName
     sbEndpoint: servicebus.outputs.sbEndpoint
@@ -117,14 +119,14 @@ module configurAPIM './modules/configure/configure-apim.bicep' = {
     apim
   ]
 }
-
+ 
 //  Telemetry Deployment
 @description('Enable usage and telemetry feedback to Microsoft.')
 param enableTelemetry bool = true
 var telemetryId = '69ef933a-eff0-450b-8a46-331cf62e160f-apptemp-${location}'
 resource telemetrydeployment 'Microsoft.Resources/deployments@2021-04-01' = if (enableTelemetry) {
   name: telemetryId
-  location: location
+  // location: location
   properties: {
     mode: 'Incremental'
     template: {
@@ -134,5 +136,5 @@ resource telemetrydeployment 'Microsoft.Resources/deployments@2021-04-01' = if (
     }
   }
 }
-
+ 
 output apimServideBusOperation string = '${apim.outputs.apimEndpoint}/sb-operations/'
