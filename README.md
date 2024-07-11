@@ -65,7 +65,7 @@ Run the deployment. The deployment will create the resource group "rg-\<Name suf
 ```bash
 cd app-templates-integration-services
 
-az deployment group create --name  "<unique deployment name>" --template-file main.bicep --parameters name="<Name suffix for resources>" publisherEmail="<Publisher Email for APIM>" publisherName="<Publisher Name for APIM> --parameters rgname="<Resource Group Name>" --parameters location="westus2" --resource-group "<Resource Group Name>"!
+az deployment group create --name  "<unique deployment name>" --template-file main.bicep --parameters name="<Name suffix for resources>" publisherEmail="<Publisher Email for APIM>" publisherName="<Publisher Name for APIM> --parameters rgname="<Resource Group Name>" --parameters location="westus2" --resource-group "<Resource Group Name>"
 ```
 
 The following deployments will run:
